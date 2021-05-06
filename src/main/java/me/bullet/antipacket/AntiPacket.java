@@ -13,8 +13,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -67,17 +69,26 @@ public class AntiPacket extends JavaPlugin implements Listener {
                     final StructureModifier<Integer> integers = packet.getIntegers();
                     final InventoryView inventoryView = player.getOpenInventory();
                     final int slot = inventoryView.convertSlot(integers.readSafely(1));
-                    final ItemStack clickedItem = structureModifier.readSafely(0);
-                    final ItemStack itemOnHand = inventoryView.getItem(slot);
-                    if (slot < 0) {
+                    if (slot < 0 && slot != -999 && slot != -1) {
                         LOGGER.info("Player " + player.getName() + " was kicked for chinese PingBypass");
                         AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
                     } else if (structureModifier.size() > 0 && slot > 0) {
-                        if ((!clickedItem.isSimilar(itemOnHand)
-                                && clickedItem.hasItemMeta()
-                                && clickedItem.getItemMeta().toString().length() > 512)) {
-                            LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
-                            AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
+                        final ItemStack clickedItem = structureModifier.readSafely(0);
+                        if (clickedItem == null) {
+                            return;
+                        }
+                        if (clickedItem.hasItemMeta()) {
+                            final ItemMeta meta = clickedItem.getItemMeta();
+                            int bytesFromStringReal = 0;
+                            try {
+                                bytesFromStringReal += meta.toString().getBytes(StandardCharsets.UTF_8).length;
+                            } catch (final NullPointerException e) {
+                                bytesFromStringReal += (meta.getClass().getName() + "@" + Integer.toHexString(meta.hashCode())).getBytes(StandardCharsets.UTF_8).length;
+                            }
+                            if (bytesFromStringReal > 512) {
+                                LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
+                                AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
+                            }
                         }
                     }
                 } else if (type == PacketType.Play.Client.UPDATE_SIGN) {
