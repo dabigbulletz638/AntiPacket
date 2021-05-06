@@ -1,0 +1,37 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+apply plugin: 'java'
+
+group = 'me.bullet.antipacket'
+version = '1.0'
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'papermc'
+        url = 'https://papermc.io/repo/repository/maven-public/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+    maven {
+        name = 'dmulloy2'
+        url = 'https://repo.dmulloy2.net/nexus/repository/public/'
+    }
+}
+
+dependencies {
+    compileOnly group: 'com.destroystokyo.paper', name: 'paper-api', version: '1.12.2-R0.1-SNAPSHOT'
+
+    compileOnly group: 'com.comphenix.protocol', name: 'ProtocolLib', version: '4.5.1'
+    compileOnly group: 'com.comphenix.packetwrapper', name: 'PacketWrapper', version: '1.12.1-R0.1-SNAPSHOT'
+}
+
+processResources {
+    from(sourceSets.main.resources.srcDirs) {
+        filter ReplaceTokens, tokens: [version: version]
+    }
+}

@@ -1,0 +1,5 @@
+name: AntiPacket
+version: @version@
+main: me.bullet.antipacket.AntiPacket
+authors: [bullet]
+depend: [ProtocolLib, PacketWrapper]
