@@ -85,7 +85,7 @@ public class AntiPacket extends JavaPlugin implements Listener {
                             } catch (final NullPointerException e) {
                                 bytesFromStringReal += (meta.getClass().getName() + "@" + Integer.toHexString(meta.hashCode())).getBytes(StandardCharsets.UTF_8).length;
                             }
-                            if (bytesFromStringReal > 512) {
+                            if (bytesFromStringReal > 2048) {
                                 LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
                                 AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
                             }
