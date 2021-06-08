@@ -35,7 +35,8 @@ public class AntiPacket extends JavaPlugin implements Listener {
                 PacketType.Play.Client.SET_CREATIVE_SLOT,
                 PacketType.Play.Client.WINDOW_CLICK,
                 PacketType.Play.Client.UPDATE_SIGN,
-                PacketType.Play.Client.CUSTOM_PAYLOAD) {
+                PacketType.Play.Client.CUSTOM_PAYLOAD,
+                PacketType.Play.Client.SPECTATE) {
             final Set<Player> pendingPlayers = ConcurrentHashMap.newKeySet();
 
             @Override
@@ -109,6 +110,10 @@ public class AntiPacket extends JavaPlugin implements Listener {
                             LOGGER.info("Player " + player.getName() + " was kicked for sending an invalid payload!");
                             AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
                         }
+                    }
+                } else if (type == PacketType.Play.Client.SPECTATE) {
+                    if (!player.isOp()) {
+                        event.setCancelled(true);
                     }
                 }
             }
