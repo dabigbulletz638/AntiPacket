@@ -26,7 +26,7 @@ repositories {
 dependencies {
     compileOnly group: 'com.destroystokyo.paper', name: 'paper-api', version: '1.12.2-R0.1-SNAPSHOT'
 
-    compileOnly group: 'com.comphenix.protocol', name: 'ProtocolLib', version: '4.5.1'
+    compileOnly group: 'com.comphenix.protocol', name: 'ProtocolLib', version: '4.7.0'
     compileOnly group: 'com.comphenix.packetwrapper', name: 'PacketWrapper', version: '1.12.1-R0.1-SNAPSHOT'
 }
 
