@@ -9,6 +9,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.reflect.StructureModifier;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.InventoryView;
@@ -41,6 +42,9 @@ public class AntiPacket extends JavaPlugin implements Listener {
 
             @Override
             public void onPacketReceiving(final PacketEvent event) {
+                if (event.isPlayerTemporary()) {
+                    return;
+                }
                 if (event.isCancelled()) {
                     return;
                 }
@@ -66,31 +70,42 @@ public class AntiPacket extends JavaPlugin implements Listener {
                         AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
                     }
                 } else if (type == PacketType.Play.Client.WINDOW_CLICK) {
+                    if (player.isOp()) {
+                        return;
+                    }
                     final StructureModifier<ItemStack> structureModifier = packet.getItemModifier();
                     final StructureModifier<Integer> integers = packet.getIntegers();
                     final InventoryView inventoryView = player.getOpenInventory();
-                    final int slot = inventoryView.convertSlot(integers.readSafely(1));
-                    if (slot < 0 && slot != -999 && slot != -1) {
-                        LOGGER.info("Player " + player.getName() + " was kicked for chinese PingBypass");
+                    final int slot = inventoryView.convertSlot(integers.read(1));
+                    final ItemStack clickedItem = structureModifier.read(0);
+                    if (clickedItem == null) {
+                        return;
+                    }
+                    // Check if we got a book or some big data before checking the slot...
+                    final Material itemType = clickedItem.getType();
+                    if (itemType == Material.WRITTEN_BOOK
+                            || itemType == Material.BOOK
+                            || itemType == Material.BOOK_AND_QUILL) {
+                        LOGGER.info("Player " + player.getName() + " tried to click on a book!");
                         AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
-                    } else if (structureModifier.size() > 0 && slot > 0) {
-                        final ItemStack clickedItem = structureModifier.readSafely(0);
-                        if (clickedItem == null) {
-                            return;
+                    }
+                    if (clickedItem.hasItemMeta()) {
+                        final ItemMeta meta = clickedItem.getItemMeta();
+                        int bytesFromStringReal = 0;
+                        try {
+                            bytesFromStringReal += meta.toString().getBytes(StandardCharsets.UTF_8).length;
+                        } catch (final NullPointerException e) {
+                            bytesFromStringReal += (meta.getClass().getName() + "@" + Integer.toHexString(meta.hashCode())).getBytes(StandardCharsets.UTF_8).length;
                         }
-                        if (clickedItem.hasItemMeta()) {
-                            final ItemMeta meta = clickedItem.getItemMeta();
-                            int bytesFromStringReal = 0;
-                            try {
-                                bytesFromStringReal += meta.toString().getBytes(StandardCharsets.UTF_8).length;
-                            } catch (final NullPointerException e) {
-                                bytesFromStringReal += (meta.getClass().getName() + "@" + Integer.toHexString(meta.hashCode())).getBytes(StandardCharsets.UTF_8).length;
-                            }
-                            if (bytesFromStringReal > 2048) {
-                                LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
-                                AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
-                            }
+                        if (bytesFromStringReal > 512) {
+                            LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
+                            AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
                         }
+                    }
+                    if (slot < 0 && slot != -999) {
+                        LOGGER.info(String.valueOf(slot));
+                        LOGGER.info("Player " + player.getName() + " was kicked for a slot less than 0");
+                        AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
                     }
                 } else if (type == PacketType.Play.Client.UPDATE_SIGN) {
                     if (player.getGameMode() != GameMode.CREATIVE) {
