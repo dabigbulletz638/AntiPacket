@@ -8,6 +8,8 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.reflect.StructureModifier;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -18,6 +20,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -153,13 +156,20 @@ public class AntiPacket extends JavaPlugin implements Listener {
                 final PacketContainer packet = event.getPacket();
                 final PacketType type = event.getPacketType();
                 if (type == PacketType.Play.Server.CHAT) {
-                    final String chatMessage = packet.getChatComponents()
-                            .read(0)
-                            .getJson()
-                            .toLowerCase();
-                    if (chatMessage.contains("${")) {
-                        event.setCancelled(true);
-                        LOGGER.info("server was sending bozo exploit");
+                    final EnumWrappers.ChatType chatType = packet.getChatTypes()
+                            .read(0);
+                    if (chatType == EnumWrappers.ChatType.CHAT) {
+                        final WrappedChatComponent component = packet.getChatComponents()
+                                .readSafely(0);
+                        if (component == null) {
+                            return;
+                        }
+                        final String chatMessage = component.getJson()
+                                .toLowerCase();
+                        if (chatMessage.contains("${")) {
+                            event.setCancelled(true);
+                            LOGGER.info("server was sending bozo exploit");
+                        }
                     }
                 }
             }
