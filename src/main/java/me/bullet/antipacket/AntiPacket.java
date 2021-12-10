@@ -37,7 +37,9 @@ public class AntiPacket extends JavaPlugin implements Listener {
                 PacketType.Play.Client.WINDOW_CLICK,
                 PacketType.Play.Client.UPDATE_SIGN,
                 PacketType.Play.Client.CUSTOM_PAYLOAD,
-                PacketType.Play.Client.SPECTATE) {
+                PacketType.Play.Client.SPECTATE,
+                PacketType.Play.Client.CHAT,
+                PacketType.Play.Server.CHAT) {
             final Set<Player> pendingPlayers = ConcurrentHashMap.newKeySet();
 
             @Override
@@ -88,6 +90,7 @@ public class AntiPacket extends JavaPlugin implements Listener {
                             || itemType == Material.BOOK_AND_QUILL) {
                         LOGGER.info("Player " + player.getName() + " tried to click on a book!");
                         AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
+                        return;
                     }
                     if (clickedItem.hasItemMeta()) {
                         final ItemMeta meta = clickedItem.getItemMeta();
@@ -97,12 +100,13 @@ public class AntiPacket extends JavaPlugin implements Listener {
                         } catch (final NullPointerException e) {
                             bytesFromStringReal += (meta.getClass().getName() + "@" + Integer.toHexString(meta.hashCode())).getBytes(StandardCharsets.UTF_8).length;
                         }
-                        if (bytesFromStringReal > 512) {
+                        if (bytesFromStringReal > 4096) {
                             LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
                             AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
+                            return;
                         }
                     }
-                    if (slot < 0 && slot != -999) {
+                    if (slot < 0 && slot != -999 && slot != -1) {
                         LOGGER.info(String.valueOf(slot));
                         LOGGER.info("Player " + player.getName() + " was kicked for a slot less than 0");
                         AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
@@ -129,6 +133,33 @@ public class AntiPacket extends JavaPlugin implements Listener {
                 } else if (type == PacketType.Play.Client.SPECTATE) {
                     if (!player.isOp()) {
                         event.setCancelled(true);
+                    }
+                } else if (type == PacketType.Play.Client.CHAT) {
+                    final String chatMessage = packet.getStrings()
+                            .read(0)
+                            .toLowerCase();
+                    if (chatMessage.contains("${")) {
+                        event.setCancelled(true);
+                        LOGGER.info("Player " + player.getName() + " was attempting bozo exploit");
+                    }
+                }
+            }
+
+            @Override
+            public void onPacketSending(final PacketEvent event) {
+                if (event.isCancelled()) {
+                    return;
+                }
+                final PacketContainer packet = event.getPacket();
+                final PacketType type = event.getPacketType();
+                if (type == PacketType.Play.Server.CHAT) {
+                    final String chatMessage = packet.getChatComponents()
+                            .read(0)
+                            .getJson()
+                            .toLowerCase();
+                    if (chatMessage.contains("${")) {
+                        event.setCancelled(true);
+                        LOGGER.info("server was sending bozo exploit");
                     }
                 }
             }
