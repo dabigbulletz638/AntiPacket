@@ -20,19 +20,23 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 public class AntiPacket extends JavaPlugin implements Listener {
-
     private static final String KICK_MESSAGE = "\uD83D\uDC7D";
 
     private static final Logger LOGGER = Logger.getLogger("AntiPacket");
 
     @Override
     public void onEnable() {
+        try {
+            CVE_2021_44228.patch();
+            LOGGER.info("Patched CVE_2021_44228.");
+        } catch (final Throwable t) {
+            t.printStackTrace();
+        }
         this.getServer().getPluginManager().registerEvents(this, this);
         final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.HIGHEST,
@@ -93,7 +97,6 @@ public class AntiPacket extends JavaPlugin implements Listener {
                             || itemType == Material.BOOK_AND_QUILL) {
                         LOGGER.info("Player " + player.getName() + " tried to click on a book!");
                         AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
-                        return;
                     }
                     if (clickedItem.hasItemMeta()) {
                         final ItemMeta meta = clickedItem.getItemMeta();
@@ -106,7 +109,6 @@ public class AntiPacket extends JavaPlugin implements Listener {
                         if (bytesFromStringReal > 4096) {
                             LOGGER.info("Player " + player.getName() + " was kicked for sending a big WINDOW_CLICK!");
                             AntiPacket.this.kickPlayer(event, this.pendingPlayers, player);
-                            return;
                         }
                     }
                     if (slot < 0 && slot != -999 && slot != -1) {
