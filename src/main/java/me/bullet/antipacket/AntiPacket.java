@@ -158,20 +158,16 @@ public class AntiPacket extends JavaPlugin implements Listener {
                 final PacketContainer packet = event.getPacket();
                 final PacketType type = event.getPacketType();
                 if (type == PacketType.Play.Server.CHAT) {
-                    final EnumWrappers.ChatType chatType = packet.getChatTypes()
-                            .read(0);
-                    if (chatType == EnumWrappers.ChatType.CHAT) {
-                        final WrappedChatComponent component = packet.getChatComponents()
-                                .readSafely(0);
-                        if (component == null) {
-                            return;
-                        }
-                        final String chatMessage = component.getJson()
-                                .toLowerCase();
-                        if (chatMessage.contains("${")) {
-                            event.setCancelled(true);
-                            LOGGER.info("server was sending bozo exploit");
-                        }
+                    final WrappedChatComponent component = packet.getChatComponents()
+                            .readSafely(0);
+                    if (component == null) {
+                        return;
+                    }
+                    final String chatMessage = component.getJson()
+                            .toLowerCase();
+                    if (chatMessage.contains("${")) {
+                        event.setCancelled(true);
+                        LOGGER.info("server was sending bozo exploit");
                     }
                 }
             }
